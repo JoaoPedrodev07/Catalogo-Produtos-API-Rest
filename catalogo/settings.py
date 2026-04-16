@@ -20,8 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7ouh8bu4im+b52xkn_t*y5j!cg7kn#z5%2krifuh1i!hfru0!s'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7ouh8bu4im+b52xkn_t*y5j!cg7kn#z5%2krifuh1i!hfru0!s')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -119,24 +118,7 @@ USE_TZ = True
 # Arquivos estáticos para deploy
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = 'static/'
-MEDIA_ROOT = 'BASE_DIR' / 'media'
 
-
-# Configuração de arquivos de mídia
-# SQLite não suporta S3, mas já preparamos o caminho
-if DEBUG:
-    # Armazenamento local para desenvolvimento
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-else:
-    # Configuração preparada para S3 (será ativada depois)
-    USE_S3 = os.getenv('USE_S3', 'False') == 'True'
-    if USE_S3:
-        # Configurações S3 serão ativadas posteriormente
-        pass
-    else:
-        MEDIA_URL = '/media/'
-        MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 

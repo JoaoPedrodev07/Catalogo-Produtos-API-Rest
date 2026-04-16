@@ -119,6 +119,8 @@ USE_TZ = True
 # Arquivos estáticos para deploy
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = 'static/'
+MEDIA_ROOT = 'BASE_DIR' / 'media'
 
 
 # Configuração de arquivos de mídia

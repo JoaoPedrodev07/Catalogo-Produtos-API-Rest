@@ -1,22 +1,16 @@
 branch-defaults:
-  main:
-    environment: null
-    group_suffix: null
   master:
     environment: Catalogo-ProdutosAP1-env
-deploy:
-  artifact: app.zip
 environment-defaults:
-  Catalogo-produtos-env:
+  Catalogo-ProdutosAP1-env:
     branch: null
     repository: null
 global:
-  application_name: catalogo-produtos
+  application_name: Catalogo-Produtos AP1
   default_ec2_keyname: null
-  default_platform: Python 3.13
+  default_platform: Python 3.13 running on 64bit Amazon Linux 2023
   default_region: us-east-1
   include_git_submodules: true
-  include_gitid: true
   instance_profile: null
   platform_name: null
   platform_version: null

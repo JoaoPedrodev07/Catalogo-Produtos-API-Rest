@@ -1,0 +1,23 @@
+# Arquivos de Bytecode e Cache do Python
+__pycache__/
+*.pyc
+
+# Banco de dados
+db.sqlite3
+*.sqlite3
+
+# Ambiente Virtual
+.venv/
+venv/
+env/
+
+# Arquivos de mídia (uploads dos usuários)
+/media/
+
+# Arquivos de configuração do editor
+.vscode/
+.idea/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db

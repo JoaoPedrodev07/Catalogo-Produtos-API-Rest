@@ -2,17 +2,24 @@ branch-defaults:
   main:
     environment: null
     group_suffix: null
-environment-defaults: {}
+  master:
+    environment: Catalogo-ProdutosAP1-env
 deploy:
   artifact: app.zip
+environment-defaults:
+  Catalogo-produtos-env:
+    branch: null
+    repository: null
 global:
   application_name: catalogo-produtos
+  default_ec2_keyname: null
   default_platform: Python 3.13
   default_region: us-east-1
-  include_gitid: yes
+  include_git_submodules: true
+  include_gitid: true
   instance_profile: null
   platform_name: null
   platform_version: null
   profile: eb-cli
   sc: git
-  workspace_type: Applicationx
+  workspace_type: Application

@@ -7,7 +7,7 @@ Este projeto consiste em uma API REST para um catálogo de produtos, desenvolvid
 *   João Pedro Lima de Campos
 *   Joao Pedro Pingarilho
 *   Renan habib Yassin Barbosa
-*   Nicholas Vasconcelos Barbosa
+*   Nicholas Vasconcelos
 *   Douglas Hancock
 
 ## Link da API na AWS

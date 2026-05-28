@@ -20,12 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7ouh8bu4im+b52xkn_t*y5j!cg7kn#z5%2krifuh1i!hfru0!s')
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split() or ["localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -75,9 +75,16 @@ WSGI_APPLICATION = 'catalogo.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("RDS_DB_NAME", ""),
+        "USER": os.environ.get("RDS_USERNAME", ""),
+        "PASSWORD": os.environ.get("RDS_PASSWORD", ""),
+        "HOST": os.environ.get("RDS_HOSTNAME", ""),
+        "PORT": os.environ.get("RDS_PORT", "3306"),
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 

@@ -73,8 +73,43 @@ WSGI_APPLICATION = 'catalogo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+try:
+    import dj_database_url
+except Exception:
+    dj_database_url = None
 
-if all(os.getenv(name) for name in ["RDS_DB_NAME", "RDS_USERNAME", "RDS_PASSWORD", "RDS_HOSTNAME"]):
+# DATABASE configuration priority (first match wins):
+# 1) DATABASE_URL (standard), 2) POSTGRES_* env vars, 3) RDS MySQL vars, 4) local SQLite
+DATABASES = {}
+if os.getenv('DATABASE_URL'):
+    # Parse DATABASE_URL (recommended for EB with PostgreSQL)
+    if dj_database_url:
+        DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'), conn_max_age=600)
+    else:
+        # minimal fallback parser when dj_database_url isn't installed (local dev)
+        from urllib.parse import urlparse
+        url = urlparse(os.getenv('DATABASE_URL'))
+        db_name = url.path[1:] if url.path else ''
+        DATABASES['default'] = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_name,
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port or '5432',
+        }
+elif all(os.getenv(name) for name in ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_HOST']):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+            'HOST': os.getenv('POSTGRES_HOST'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
+elif all(os.getenv(name) for name in ["RDS_DB_NAME", "RDS_USERNAME", "RDS_PASSWORD", "RDS_HOSTNAME"]):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -136,4 +171,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Optional S3 media storage configuration (enable by setting AWS env vars)
+if os.getenv('AWS_STORAGE_BUCKET_NAME') and os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY'):
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME') or None
+    AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL') or None
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
 

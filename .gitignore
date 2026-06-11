@@ -1,3 +1,5 @@
+# github
+/.github
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
@@ -27,4 +29,5 @@ __pycache__/
 
 # Media files
 media/
+
 

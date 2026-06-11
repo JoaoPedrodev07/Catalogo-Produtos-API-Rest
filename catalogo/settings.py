@@ -20,12 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-SECRET_KEY = os.environ["SECRET_KEY"]
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me-for-production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split() or ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [host for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").replace(" ", ",").split(",") if host]
 
 
 # Application definition
@@ -74,19 +74,27 @@ WSGI_APPLICATION = 'catalogo.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("RDS_DB_NAME", ""),
-        "USER": os.environ.get("RDS_USERNAME", ""),
-        "PASSWORD": os.environ.get("RDS_PASSWORD", ""),
-        "HOST": os.environ.get("RDS_HOSTNAME", ""),
-        "PORT": os.environ.get("RDS_PORT", "3306"),
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+if all(os.getenv(name) for name in ["RDS_DB_NAME", "RDS_USERNAME", "RDS_PASSWORD", "RDS_HOSTNAME"]):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("RDS_DB_NAME"),
+            "USER": os.getenv("RDS_USERNAME"),
+            "PASSWORD": os.getenv("RDS_PASSWORD"),
+            "HOST": os.getenv("RDS_HOSTNAME"),
+            "PORT": os.getenv("RDS_PORT", "3306"),
+            "OPTIONS": {
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation

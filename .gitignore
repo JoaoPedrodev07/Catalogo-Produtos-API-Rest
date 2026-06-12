@@ -29,7 +29,7 @@ __pycache__/
 *.pyc
 
 # Media files
-media/
+media/product_photos
 app3/
 
 

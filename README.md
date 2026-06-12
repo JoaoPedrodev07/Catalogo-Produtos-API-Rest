@@ -1,185 +1,453 @@
-# Projeto Catálogo de Produtos - Evolução de Arquitetura (AP1 para AP2)
+# Catálogo de Produtos — Evolução de Arquitetura AP1 → AP2
 
-Este repositório documenta a evolução da nossa API REST de Catálogo de Produtos, desenvolvida com **Django** e **Django Rest Framework (DRF)**, e implantada na nuvem da **AWS**.
+API REST de catálogo de produtos com carrinho de compras, desenvolvida em **Django + Django REST Framework** e implantada na **AWS**.
 
-O projeto foi dividido em duas grandes etapas de evolução (AP1 e AP2), saindo de uma estrutura inicial com armazenamento volátil e banco local para uma arquitetura em nuvem desacoplada, persistente e escalável.
-
----
-
-## 👥 Integrantes do Grupo
-*   Nicholas Vasconcelos
-*   João Pedro Lima de Campos
-*   Joao Pedro Pingarilho
-*   Renan habib Yassin Barbosa
-*   Douglas Hancock
+Projeto desenvolvido para a disciplina Big Data and Cloud Computing — Professor Jonh Carvalho.
 
 ---
 
-## 🔗 Links da API na AWS (Elastic Beanstalk)
+## Integrantes do Grupo
 
-A aplicação está disponível nos seguintes endereços públicos:
-
-*   **Página Principal (Frontend Consumindo API):** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/)
-*   **API - Endpoint de Produtos:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/)
-*   **API - Endpoint de Categorias:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/)
-*   **API - Endpoint de Pedidos:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/)
-*   **API - Endpoint de Itens de Pedido:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/)
-
----
-
-## 🚀 Linha do Tempo e Evolução do Projeto
-
-### 📊 Comparação de Recursos
-
-| Recurso | Fase 1 (AP1) | Fase 2 (AP2) |
-| :--- | :--- | :--- |
-| **Escopo do App** |AP1 Apenas backend de produtos/categorias (`catalogo` e `produtos`) | pra AP2 foi adicionado o frontend e o fluxo de vendas com `Pedido` e `ItemPedido` |
-
-| **Banco de Dados** | SQLite local (arquivo local no servidor) | **Amazon RDS** (PostgreSQL ou MySQL dedicado) |
-| **Armazenamento de Mídia** | LOCAL | AP2 **Amazon S3** para armazenar imagens(Bucket dedicado persistente) |
-| **Serviço AWS** | Somente **AWS Elastic Beanstalk (EB)** | **EB** + **Amazon RDS** + **Amazon S3** |
-| **Persistência de Dados** | Volátil (dados e imagens perdidos em novos deploys/escalabilidade) | Persistência total e desacoplada em nuvem |
+| Nome |
+|------|
+| Nicholas Vasconcelos |
+| João Pedro Lima de Campos |
+| João Pedro Pingarilho |
+| Renan Habib Yassin Barbosa |
+| Douglas Hancock |
 
 ---
 
-### 🗺️ Arquitetura Visual
+### Website Online - Hosted no AWS EB
+![Website - Catálogo de Produtos](media/screenshots/website_image.png)
 
-#### Fase 1 (AP1): AWS Elastic Beanstalk Isolado
-Na fase 1, toda a aplicação (backend Django, banco de dados SQLite e arquivos de mídia) residia localmente na mesma máquina virtual EC2 gerenciada pelo Elastic Beanstalk.
+## Links da API em Produção (Elastic Beanstalk)
+
+| Recurso | URL |
+|---------|-----|
+| Frontend (página principal) | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/) |
+| Produtos | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/) |
+| Categorias | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/) |
+| Pedidos | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/) |
+| Itens de Pedido | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/) |
+| Django Admin | [http://ap2-jonh.us-east-1.elasticbeanstalk.com/admin/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/admin/) |
+
+---
+
+## Arquitetura da Solução
+
+### Comparativo AP1 → AP2
+
+| Recurso | AP1 | AP2 |
+|---------|-----|-----|
+| **Banco de dados** | SQLite (arquivo local na instância) | **Amazon RDS PostgreSQL** (gerenciado, persistente) |
+| **Armazenamento de mídia** | Pasta `/media/` local (volátil) | **Amazon S3** (bucket dedicado, durável) |
+| **Serviços AWS** | Elastic Beanstalk apenas | EB + RDS + S3 |
+| **Persistência** | Dados perdidos a cada redeploy | Totalmente desacoplada e persistente |
+| **Modelos de dados** | `Categoria` + `Produto` | + `Pedido` + `ItemPedido` + `JSONField` |
+| **Frontend** | Apenas API | Frontend integrado consumindo a API |
+
+### Diagrama AP1 — Elastic Beanstalk Isolado
+
 ```mermaid
 graph TD
-    User([Usuário]) --> Nginx[Nginx / EC2 no Elastic Beanstalk]
-    Nginx --> Django[Django Application]
-    Django --> SQLite[(SQLite - Arquivo Local)]
-    Django --> Media[Media - Pasta Local /media/]
+  User["Usuário"] --> EB["Nginx / EC2 no Elastic Beanstalk"]
+  EB --> Django["Django Application"]
+  Django --> SQLite["SQLite — arquivo local"]
+  Django --> Media["/media/ — pasta local"]
 ```
 
-#### Fase 2 (AP2): Desacoplamento com RDS e S3
-Na fase 2, a arquitetura evoluiu para uma infraestrutura resiliente de produção. O banco de dados e os arquivos estáticos/mídia foram desacoplados da instância de execução.
+### Diagrama AP2 — Arquitetura Desacoplada
+
 ```mermaid
 graph TD
-    User([Usuário]) --> EB[AWS Elastic Beanstalk / EC2]
-    EB --> Django[Django Application]
-    Django --> RDS[(Amazon RDS - Banco de Dados Dedicado)]
-    Django --> S3[[Amazon S3 - Bucket de Imagens/Mídia]]
+  User["Usuário"] --> EB["AWS Elastic Beanstalk / EC2"]
+  EB --> Django["Django Application"]
+  Django --> RDS["Amazon RDS<br/>PostgreSQL"]
+  Django --> S3["Amazon S3<br/>Bucket de mídia"]
+  Django --> Admin["Django Admin"]
 ```
 
 ---
 
-## 📝 Detalhes de Implementação por Fase
-
-### 1. Fase 1 (AP1): Fundação do Backend e Deploy com Elastic Beanstalk
-Nesta fase inicial, implementamos a base estrutural da aplicação e o pipeline de deploy simplificado utilizando somente o **AWS Elastic Beanstalk**.
-
-*   **Estrutura de Modelos**:
-    *   Criação da classe `Categoria` para agrupar os itens do sistema.
-    *   Criação da classe `Produto` com um relacionamento de chave estrangeira (`ForeignKey`) referenciando `Categoria`, além de suporte para cadastro de preços, estoque e imagens.
-*   **Serializers & ViewSets**:
-    *   Configuração do Django Rest Framework (DRF) com serializers dinâmicos e ViewSets para automatizar as operações CRUD das categorias e produtos.
-*   **Deploy Automatizado com Elastic Beanstalk**:
-    *   Inicialização e configuração do ambiente utilizando a ferramenta CLI `eb init` e `eb create`.
-    *   Criação da pasta `.ebextensions` para gerenciar comandos automáticos durante o deploy:
-        *   `00_django.config`: Configura o caminho WSGI e as variáveis globais de configurações do Django.
-        *   `01_django_migrate.config`: Executa o `collectstatic` e as migrações do banco SQLite local na instância.
-        *   `02_media_files.config`: Mapeia o servidor Nginx interno para servir os arquivos de mídia armazenados localmente na instância.
-    *   Criação do `Procfile` instruindo o Elastic Beanstalk a usar o `gunicorn` como servidor de aplicação com múltiplos workers/threads.
-
----
-
-### 2. Fase 2 (AP2): Persistência, Escalabilidade e Novas Funcionalidades
-Evoluímos a infraestrutura para atender requisitos de escalabilidade horizontal, desacoplamento de banco de dados/mídia e novas funcionalidades comerciais.
-
-*   **Migração para Amazon RDS**:
-    *   Para evitar a perda de dados a cada redeploy ou redimensionamento de instâncias, substituímos o banco SQLite local pelo **Amazon RDS** (MySQL ou PostgreSQL dedicado).
-    *   Implementamos suporte a variáveis de ambiente em `settings.py` para ler automaticamente conexões seguras tanto via `DATABASE_URL` (com `dj-database-url`) quanto via variáveis tradicionais de ambiente injetadas pelo EB.
-*   **Armazenamento de Mídia em Nuvem com Amazon S3**:
-    *   Instalação e configuração da biblioteca `django-storages[boto3]` e SDK `boto3`.
-    *   Quando as credenciais AWS (`AWS_STORAGE_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) são fornecidas no ambiente, os arquivos e imagens de produtos enviados pelos usuários são salvos e servidos diretamente a partir de um Bucket do **Amazon S3**, garantindo durabilidade e disponibilidade ilimitada.
-*   **Adição de Fluxo de Compras (Novos Modelos)**:
-    *   Para além de um catálogo passivo, implementamos os modelos `Pedido` e `ItemPedido` no app `produtos` para controle de vendas.
-    *   Customização do método `create` em `PedidoViewSet` contendo regras de negócio importantes:
-        *   Geração automática de número exclusivo de pedido (`PED` + timestamp + sufixo randômico).
-        *   Validação da existência dos produtos adicionados e cálculo dinâmico de subtotais e valor total do pedido.
-        *   Prevenção contra a criação de pedidos sem itens ou sem identificação de cliente.
-
----
-
-## ⚙️ Configuração e Execução Local
+## Execução Local
 
 ### Pré-requisitos
-*   Python 3.11+
-*   Git
 
-### Passo a Passo
+- Python 3.11+
+- Git
+- (Opcional) Credenciais AWS para testar com RDS/S3 localmente
 
-1.  **Clonar o repositório:**
-    ```bash
-    git clone https://github.com/seu-usuario/seu-repositorio.git
-    cd Catalogo-Produtos-API-Rest
-    ```
+### Passo a passo
 
-2.  **Configurar ambiente virtual:**
-    ```bash
-    # No Windows
-    python -m venv .venv
-    .\.venv\Scripts\activate
+**1. Clonar o repositório**
 
-    # No macOS/Linux
-    python3 -m venv .venv
-    source .venv/bin/activate
-    ```
+```bash
+git clone https://github.com/seu-usuario/Catalogo-Produtos-API-Rest.git
+cd Catalogo-Produtos-API-Rest
+```
 
-3.  **Instalar pacotes dependentes:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+**2. Criar e ativar ambiente virtual**
 
-4.  **Variáveis de Ambiente (Opcional para Integrações na Nuvem):**
-    Para rodar localmente utilizando SQLite e armazenamento local padrão, nenhuma variável é necessária.
-    Para apontar para o banco de dados RDS e o storage S3 localmente, defina as variáveis de ambiente:
-    ```bash
-    # Banco de Dados
-    DATABASE_URL=postgres://usuario:senha@rds-endpoint:5432/db_name
+```bash
+# macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate
 
-    # AWS S3 (Mídia)
-    AWS_ACCESS_KEY_ID=sua_chave_de_acesso
-    AWS_SECRET_ACCESS_KEY=sua_chave_secreta
-    AWS_STORAGE_BUCKET_NAME=nome_do_seu_bucket_s3
-    AWS_S3_REGION_NAME=us-east-1
-    ```
+# Windows
+python -m venv .venv
+.\.venv\Scripts\activate
+```
 
-5.  **Aplicar migrações:**
-    ```bash
-    python manage.py migrate
-    ```
+**3. Instalar dependências**
 
-6.  **Criar superusuário (Painel Admin):**
-    ```bash
-    python manage.py createsuperuser
-    ```
+```bash
+pip install -r requirements.txt
+```
 
-7.  **Iniciar servidor local:**
-    ```bash
-    python manage.py runserver
-    ```
-    Acesse:
-    *   API navegável: `http://127.0.0.1:8000/api/`
-    *   Painel Administrativo: `http://127.0.0.1:8000/admin/`
+**4. Configurar variáveis de ambiente**
+
+Para rodar localmente com **SQLite** e mídia local (sem AWS), nenhuma variável é necessária — o projeto detecta automaticamente a ausência das variáveis e usa os defaults.
+
+Para apontar para **RDS + S3** localmente, crie um arquivo `.env` na raiz (nunca commite este arquivo):
+
+```bash
+# Django
+SECRET_KEY=sua-chave-secreta-aqui
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Banco de dados (RDS PostgreSQL)
+DATABASE_URL=postgresql://usuario:senha@endpoint-rds:5432/nome_do_banco
+
+# Mídia no S3
+AWS_STORAGE_BUCKET_NAME=nome-do-bucket
+AWS_S3_REGION_NAME=us-east-1
+```
+
+**5. Aplicar migrações**
+
+```bash
+python manage.py migrate
+```
+
+**6. Criar superusuário administrador (root)**
+
+```bash
+python manage.py createsuperuser
+# Informe username: root (ou o de sua preferência), email e senha
+```
+
+**7. (Opcional) Carregar dados iniciais**
+
+```bash
+python manage.py load_initial_data --fixture initial_data.json
+```
+
+**8. Iniciar servidor**
+
+```bash
+python manage.py runserver
+```
+
+Acesse:
+- API navegável: `http://127.0.0.1:8000/api/`
+- Frontend: `http://127.0.0.1:8000/`
+- Admin: `http://127.0.0.1:8000/admin/`
 
 ---
 
-## 🛠️ Configurações Recomendadas no Elastic Beanstalk (Produção)
+## Deploy no Elastic Beanstalk
 
-Para que a evolução (Fase 2) funcione corretamente no deploy, garanta que as seguintes variáveis estejam configuradas no console do Elastic Beanstalk:
+### Pré-requisitos de deploy
 
-1.  **Configurações do Django**:
-    *   `SECRET_KEY`: Chave secreta de produção.
-    *   `DEBUG`: `False`.
-    *   `ALLOWED_HOSTS`: `catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com` (ou correspondente).
-2.  **Variáveis de RDS**:
-    *   `DATABASE_URL`: URL no formato `postgresql://usuario:senha@endpoint:porta/banco` ou `mysql://usuario:senha@endpoint:porta/banco`.
-3.  **Variáveis de S3**:
-    *   `AWS_ACCESS_KEY_ID`: ID de acesso do usuário IAM da AWS.
-    *   `AWS_SECRET_ACCESS_KEY`: Chave de acesso secreta correspondente.
-    *   `AWS_STORAGE_BUCKET_NAME`: Nome do bucket S3 destinado à mídia.
-    *   `AWS_S3_REGION_NAME`: Região do seu bucket (ex: `us-east-1`).
+- AWS CLI instalada e configurada (`aws configure`)
+- EB CLI instalada (`pip install awsebcli`)
+- Instância RDS PostgreSQL já criada (ver seção RDS abaixo)
+- Bucket S3 já criado (ver seção S3 abaixo)
+
+### Passo a passo
+
+**1. Inicializar o projeto EB (apenas na primeira vez)**
+
+```bash
+eb init
+# Escolha a região us-east-1
+# Selecione a plataforma: Python 3.11
+# Nome da aplicação: catalogo-produtos
+```
+
+**2. Criar o ambiente de produção (apenas na primeira vez)**
+
+```bash
+eb create ap2-jonh \
+  --instance-type t3.micro \
+  --database.engine postgres \
+  --database.username admin \
+  --database.password SuaSenhaAqui
+```
+
+> Se o RDS já foi criado separadamente, omita os flags `--database.*` e configure via variáveis de ambiente (ver passo 4).
+
+**3. Gerar o pacote `app.zip` para deploy**
+
+```bash
+# Na raiz do projeto — exclui arquivos desnecessários
+zip -r app.zip . \
+  -x "*.git*" \
+  -x ".venv/*" \
+  -x "__pycache__/*" \
+  -x "*.pyc" \
+  -x "db.sqlite3" \
+  -x "media/*" \
+  -x ".env"
+```
+
+**4. Configurar variáveis de ambiente no console EB**
+
+Acesse o console AWS → Elastic Beanstalk → seu ambiente → *Configuration → Environment properties* e adicione:
+
+| Variável | Valor |
+|----------|-------|
+| `SECRET_KEY` | Chave secreta de produção (longa e aleatória) |
+| `DEBUG` | `False` |
+| `ALLOWED_HOSTS` | `ap2-jonh.us-east-1.elasticbeanstalk.com` |
+| `DATABASE_URL` | `postgresql://user:senha@endpoint-rds:5432/db` |
+| `AWS_STORAGE_BUCKET_NAME` | Nome do bucket S3 de mídia |
+| `AWS_S3_REGION_NAME` | `us-east-1` |
+
+Ou via CLI:
+
+```bash
+eb setenv \
+  SECRET_KEY="..." \
+  DEBUG=False \
+  ALLOWED_HOSTS="ap2-jonh.us-east-1.elasticbeanstalk.com" \
+  DATABASE_URL="postgresql://..." \
+  AWS_ACCESS_KEY_ID="..." \
+  AWS_SECRET_ACCESS_KEY="..." \
+  AWS_STORAGE_BUCKET_NAME="..." \
+  AWS_S3_REGION_NAME="us-east-1"
+```
+
+**5. Realizar o deploy**
+
+```bash
+eb deploy --staged
+# Ou usando o app.zip gerado:
+eb deploy --label ap2-v1
+```
+
+**6. Criar superusuário no ambiente de produção**
+
+```bash
+eb ssh
+# Dentro da instância:
+source /var/app/venv/*/bin/activate
+cd /var/app/current
+python manage.py createsuperuser
+# username: root | defina email e senha segura
+```
+
+**7. Verificar o deploy**
+
+```bash
+eb status        # Verifica saúde do ambiente
+eb logs          # Visualiza logs em tempo real
+eb open          # Abre a aplicação no browser
+```
+
+---
+
+## 🗄️ Configuração do Amazon RDS PostgreSQL
+
+**1. Criar instância no console AWS**
+
+- Engine: PostgreSQL 15+
+- Template: Free tier (para desenvolvimento) ou Production
+- Instance: `db.t3.micro`
+- DB name: `catalogo`
+- Username: `admin`
+- Habilitar: *Public access → No* (acesso apenas pela VPC do EB)
+
+**2. Configurar Security Group**
+
+No Security Group do RDS, adicione uma inbound rule:
+- Type: `PostgreSQL`
+- Port: `5432`
+- Source: Security Group do Elastic Beanstalk
+
+**3. Executar migrações no ambiente de produção**
+
+As migrações são executadas automaticamente via `.ebextensions/01_django_migrate.config` a cada deploy (`leader_only: true`).
+
+Para executar manualmente:
+
+```bash
+eb ssh
+source /var/app/venv/*/bin/activate
+cd /var/app/current
+python manage.py migrate
+```
+
+---
+
+## 🪣 Configuração do Amazon S3
+
+**1. Criar bucket**
+
+```bash
+aws s3 mb s3://nome-do-bucket --region us-east-1
+```
+
+**2. Configurar política de acesso público para mídia**
+
+No console S3 → seu bucket → *Permissions → Bucket policy*:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadMedia",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::nome-do-bucket/*"
+    }
+  ]
+}
+```
+
+**3. Configurar CORS (para uploads via browser)**
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+    "AllowedOrigins": ["http://ap2-jonh.us-east-1.elasticbeanstalk.com"],
+    "ExposeHeaders": []
+  }
+]
+```
+
+**4. Criar IAM user com permissões mínimas**
+
+Política inline para o IAM user que o Django usa:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::nome-do-bucket/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::nome-do-bucket"
+    }
+  ]
+}
+```
+
+---
+
+## 📦 JSONField — Atributos Dinâmicos de Produto (Bônus)
+
+O modelo `Produto` inclui um campo `especificacoes` do tipo `JSONField`, persistido no PostgreSQL como `JSONB`. Isso permite armazenar atributos variáveis por tipo de produto sem alterar o schema relacional.
+
+### Estrutura do campo
+
+```json
+{
+  "brand": "Dell",
+  "item_type": "notebook",
+  "price_tier": "high-end",
+  "featured": true,
+  "name_en": "Dell XPS 15 Laptop",
+  "description_en": "Premium laptop...",
+  "image_url": "https://bucket.s3.amazonaws.com/media/..."
+}
+```
+
+### Consultas com filtro em JSONB
+
+**Filtrar por marca:**
+```python
+Produto.objects.filter(especificacoes__brand="Dell")
+```
+
+**Filtrar por tipo de item (case-insensitive):**
+```python
+Produto.objects.filter(especificacoes__item_type__icontains="notebook")
+```
+
+**Filtro combinado: categoria relacional + atributo JSON:**
+```python
+Produto.objects.filter(
+    categoria__nome="Programação & Desenvolvimento",
+    especificacoes__price_tier="premium"
+)
+```
+
+**Via API (endpoint com filtro por marca):**
+```
+GET /api/produtos/?marca=Samsung
+GET /api/produtos/?marca=Dell&categoria=1
+```
+
+### Quando usar JSONField vs campo relacional
+
+| Situação | Recomendação |
+|----------|-------------|
+| Atributo presente em **todos** os produtos (ex.: preço, nome) | Campo relacional (`CharField`, `DecimalField`) |
+| Atributo que varia por **tipo** de produto (ex.: RAM só em notebooks) | `JSONField` |
+| Necessidade de joins, integridade referencial ou constraints | Campo relacional |
+| Metadados flexíveis, variáveis, sem schema fixo | `JSONField` (JSONB no PostgreSQL) |
+
+---
+
+## Evidências de Funcionamento
+
+> **Nota:** As capturas de tela abaixo devem ser inseridas após o deploy e validação em produção.
+
+### Elastic Beanstalk - Console
+![Elastic Beanstalk Console](media/screenshots/beanstalk_image.png)
+
+### RDS PostgreSQL — Console AWS
+![RDS Console](media/screenshots/rds_image.png)
+
+### S3 — Bucket com arquivos de mídia
+![S3 Bucket - product_photos](media/screenshots/s3_image.png)
+
+### API em produção — Pagina de API produtos
+![API - Produtos endpoint](media/screenshots/api_image.png)
+
+
+---
+
+## Troubleshooting
+
+| Problema | Causa provável | Solução |
+|----------|---------------|---------|
+| `OperationalError: could not connect to server` | Security group do RDS não permite conexão do EB | Adicionar inbound rule do SG do EB no SG do RDS |
+| Imagens não aparecem em produção | Variáveis S3 não configuradas no EB | Verificar `eb printenv` e confirmar as 4 variáveis AWS |
+| `ALLOWED_HOSTS` error (400 Bad Request) | Host do EB não está na lista | Adicionar URL do EB em `ALLOWED_HOSTS` no EB env vars |
+| Admin sem CSS | `collectstatic` não rodou | Verificar `.ebextensions/django.config` e rodar `eb deploy` |
+| Migrações não aplicadas | `migrate` falhou no deploy | Verificar logs com `eb logs` e checar conexão com RDS |
+| `django.db.utils.ProgrammingError` após migrate | Migration com typo (ver `0008_fix_s3_image_urls.py`) | Corrigir `rom` → `from` na linha 1 da migration |
+
+---
+
+## Referências
+
+- [Django REST Framework](https://www.django-rest-framework.org/)
+- [Deploy Django no AWS Elastic Beanstalk](https://docs.aws.amazon.com/pt_br/elasticbeanstalk/latest/dg/create-deploy-python-django.html)
+- [Amazon RDS para PostgreSQL](https://docs.aws.amazon.com/pt_br/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html)
+- [Amazon S3 — Guia do usuário](https://docs.aws.amazon.com/pt_br/AmazonS3/latest/userguide/Welcome.html)
+- [django-storages — S3](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html)
+- [Roteiro de aula — Elastic Beanstalk](https://jonh-carvalho.github.io/BDCC_CDIA_26.1_8001/Disciplina/roteiros/07%20-%20eb/)

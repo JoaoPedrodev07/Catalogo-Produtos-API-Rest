@@ -3,12 +3,11 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from produtos.models import Categoria, Produto
+from produtos.models import Categoria, ItemPedido, Pedido, Produto
 
 
 def _build_s3_image_url(raw_url: str) -> str:
@@ -18,16 +17,14 @@ def _build_s3_image_url(raw_url: str) -> str:
     if raw_url.startswith(("http://", "https://")):
         return raw_url
 
-    if raw_url.startswith("s3://"):
-        return raw_url
-
     bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+    region = os.getenv("AWS_S3_REGION_NAME", "us-east-1").strip()
     if not bucket_name:
         return raw_url
 
     image_name = raw_url.rsplit("/", 1)[-1]
     object_key = f"media/product_photos/{image_name}"
-    return f"s3://{bucket_name}/{object_key}"
+    return f"https://{bucket_name}.s3.{region}.amazonaws.com/{object_key}"
 
 
 class Command(BaseCommand):
@@ -37,7 +34,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--clear",
             action="store_true",
-            help="Delete existing categories and products before importing.",
+            help="Delete existing data before importing.",
         )
         parser.add_argument(
             "--fixture",
@@ -58,6 +55,10 @@ class Command(BaseCommand):
             raw_items = json.load(fixture_file)
 
         if options["clear"]:
+            # Delete in reverse FK dependency order to avoid ProtectedError:
+            # ItemPedido → Pedido → Produto → Categoria
+            ItemPedido.objects.all().delete()
+            Pedido.objects.all().delete()
             Produto.objects.all().delete()
             Categoria.objects.all().delete()
 
@@ -84,9 +85,9 @@ class Command(BaseCommand):
 
             category = categories_by_old_pk.get(fields.get("catalogue"))
             image_url = fields.get("image_url", "") or ""
-            s3_image_url = _build_s3_image_url(image_url)
+            https_image_url = _build_s3_image_url(image_url)
             image_name = image_url.rsplit("/", 1)[-1] if image_url else ""
-            legacy_image_url = s3_image_url or (f"/media/product_photos/{image_name}" if image_name else "")
+            legacy_image_url = https_image_url or (f"/media/product_photos/{image_name}" if image_name else "")
 
             especificacoes = {
                 "name_en": fields.get("name_en", ""),
@@ -112,5 +113,6 @@ class Command(BaseCommand):
             product_count += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"Imported {category_count or len(Categoria.objects.all())} categories and {product_count} products from {fixture_path.name}."
+            f"Imported {category_count or len(Categoria.objects.all())} categories "
+            f"and {product_count} products from {fixture_path.name}."
         ))

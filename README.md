@@ -19,11 +19,11 @@ O projeto foi dividido em duas grandes etapas de evolução (AP1 e AP2), saindo 
 
 A aplicação está disponível nos seguintes endereços públicos:
 
-*   **Página Principal (Frontend Consumindo API):** [http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/](http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/)
-*   **API - Endpoint de Produtos:** [http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/produtos/](http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/produtos/)
-*   **API - Endpoint de Categorias:** [http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/categorias/](http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/categorias/)
-*   **API - Endpoint de Pedidos:** [http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/pedidos/](http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/pedidos/)
-*   **API - Endpoint de Itens de Pedido:** [http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/itens-pedido/](http://catalogo-produtosap1-env.eba-vpzpjfyt.us-east-1.elasticbeanstalk.com/api/itens-pedido/)
+*   **Página Principal (Frontend Consumindo API):** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/)
+*   **API - Endpoint de Produtos:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/produtos/)
+*   **API - Endpoint de Categorias:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/categorias/)
+*   **API - Endpoint de Pedidos:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/pedidos/)
+*   **API - Endpoint de Itens de Pedido:** [http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/](http://ap2-jonh.us-east-1.elasticbeanstalk.com/api/itens-pedido/)
 
 ---
 

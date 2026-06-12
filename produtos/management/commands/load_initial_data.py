@@ -1,12 +1,33 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from produtos.models import Categoria, Produto
+
+
+def _build_s3_image_url(raw_url: str) -> str:
+    if not raw_url:
+        return ""
+
+    if raw_url.startswith(("http://", "https://")):
+        return raw_url
+
+    if raw_url.startswith("s3://"):
+        return raw_url
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+    if not bucket_name:
+        return raw_url
+
+    image_name = raw_url.rsplit("/", 1)[-1]
+    object_key = f"media/product_photos/{image_name}"
+    return f"s3://{bucket_name}/{object_key}"
 
 
 class Command(BaseCommand):
@@ -63,8 +84,9 @@ class Command(BaseCommand):
 
             category = categories_by_old_pk.get(fields.get("catalogue"))
             image_url = fields.get("image_url", "") or ""
+            s3_image_url = _build_s3_image_url(image_url)
             image_name = image_url.rsplit("/", 1)[-1] if image_url else ""
-            local_image_url = f"/media/product_photos/{image_name}" if image_name else ""
+            legacy_image_url = s3_image_url or (f"/media/product_photos/{image_name}" if image_name else "")
 
             especificacoes = {
                 "name_en": fields.get("name_en", ""),
@@ -73,7 +95,7 @@ class Command(BaseCommand):
                 "item_type": fields.get("item_type", ""),
                 "price_tier": fields.get("price_tier", ""),
                 "featured": fields.get("featured", False),
-                "image_url": local_image_url,
+                "image_url": legacy_image_url,
             }
 
             produto, _ = Produto.objects.update_or_create(
@@ -83,7 +105,7 @@ class Command(BaseCommand):
                     "preco": fields.get("price", "0.00"),
                     "categoria": category,
                     "estoque": fields.get("stock", 0) or 0,
-                    "imagem_legada": local_image_url,
+                    "imagem_legada": legacy_image_url,
                     "especificacoes": especificacoes,
                 },
             )

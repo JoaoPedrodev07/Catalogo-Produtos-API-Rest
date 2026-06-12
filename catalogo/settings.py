@@ -80,24 +80,41 @@ except Exception:
 
 # DATABASE configuration priority (first match wins):
 # 1) DATABASE_URL (standard), 2) POSTGRES_* env vars, 3) RDS MySQL vars, 4) local SQLite
-DATABASES = {}
-if os.getenv('DATABASE_URL'):
-    # Parse DATABASE_URL (recommended for EB with PostgreSQL)
+def _postgres_database_config_from_url(database_url):
+    if not database_url:
+        return None
+
     if dj_database_url:
-        DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'), conn_max_age=600)
-    else:
-        # minimal fallback parser when dj_database_url isn't installed (local dev)
-        from urllib.parse import urlparse
-        url = urlparse(os.getenv('DATABASE_URL'))
-        db_name = url.path[1:] if url.path else ''
-        DATABASES['default'] = {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': db_name,
-            'USER': url.username,
-            'PASSWORD': url.password,
-            'HOST': url.hostname,
-            'PORT': url.port or '5432',
-        }
+        try:
+            parsed_database = dj_database_url.parse(database_url, conn_max_age=600)
+            if parsed_database:
+                return parsed_database
+        except Exception:
+            pass
+
+    from urllib.parse import urlparse
+
+    url = urlparse(database_url)
+    if not url.scheme or url.scheme not in {'postgres', 'postgresql', 'postgresql+psycopg2'}:
+        return None
+
+    db_name = url.path[1:] if url.path else ''
+    return {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': db_name,
+        'USER': url.username,
+        'PASSWORD': url.password,
+        'HOST': url.hostname,
+        'PORT': url.port or '5432',
+    }
+
+
+DATABASES = {}
+database_url = os.getenv('DATABASE_URL')
+postgres_database = _postgres_database_config_from_url(database_url)
+
+if postgres_database:
+    DATABASES['default'] = postgres_database
 elif all(os.getenv(name) for name in ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_HOST']):
     DATABASES = {
         'default': {

@@ -38,7 +38,9 @@ class ProdutoSerializer(serializers.ModelSerializer):
         url = obj.imagem_origem
         if not url:
             return None
-        if request and not url.startswith(("http://", "https://")):
+        if url.startswith(("http://", "https://", "s3://")):
+            return url
+        if request:
             return request.build_absolute_uri(url)
         return url
 
